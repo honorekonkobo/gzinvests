@@ -550,25 +550,29 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 xau = v_xau
                 source = 'tradingview-spot'
                 self._log(f'/api/metals OK  TradingView SPOT (XAUUSD)  XAU={xau:.2f}')
-                # Argent SPOT
-                try:
-                    req_s = urllib.request.Request(
-                        'https://scanner.tradingview.com/symbol?symbol=OANDA%3AXAGUSD&fields=close%2Cbid%2Cask&no_404=1',
-                        headers={
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                            'Referer':    'https://www.tradingview.com/',
-                            'Origin':     'https://www.tradingview.com',
-                            'Accept':     'application/json',
-                        }
-                    )
-                    with urllib.request.urlopen(req_s, timeout=8) as r2:
-                        data_s = json.loads(r2.read())
-                    v_xag = float(data_s.get('close') or data_s.get('bid') or 0)
-                    if v_xag > 0:
-                        xag = v_xag
-                        self._log(f'                                   XAG={xag:.3f}')
-                except Exception as e2:
-                    self._log(f'                TradingView argent ERREUR: {e2}')
+                # Argent SPOT — même endpoint que l'or, symboles alternatifs
+                for ag_sym in ['FX_IDC%3AXAGUSD', 'TVC%3ASILVER', 'CURRENCYCOM%3AXAG']:
+                    try:
+                        req_s = urllib.request.Request(
+                            f'https://scanner.tradingview.com/symbol?symbol={ag_sym}&fields=close%2Cbid%2Cask&no_404=1',
+                            headers={
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                                'Referer':    'https://www.tradingview.com/',
+                                'Origin':     'https://www.tradingview.com',
+                                'Accept':     'application/json',
+                            }
+                        )
+                        with urllib.request.urlopen(req_s, timeout=8) as r2:
+                            data_s = json.loads(r2.read())
+                        if not isinstance(data_s, dict):
+                            continue
+                        v_xag = float(data_s.get('close') or data_s.get('bid') or 0)
+                        if v_xag > 1:
+                            xag = v_xag
+                            self._log(f'                TradingView SPOT ({ag_sym}) XAG={xag:.3f}')
+                            break
+                    except Exception as e2:
+                        self._log(f'                TradingView argent ({ag_sym}) ERREUR: {e2}')
             else:
                 self._log(f'/api/metals TradingView -> valeur invalide: {data_g}')
         except Exception as e:
